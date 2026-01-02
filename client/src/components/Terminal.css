@@ -1,0 +1,140 @@
+.terminal-container {
+  background: #1e1e1e;
+  border-top: 1px solid #3e3e42;
+  display: flex;
+  flex-direction: column;
+  transition: height 0.3s;
+}
+
+.terminal-container:not(.expanded) {
+  height: 40px;
+}
+
+.terminal-container.expanded {
+  height: 300px;
+}
+
+.terminal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #252526;
+  border-bottom: 1px solid #3e3e42;
+  min-height: 40px;
+}
+
+.terminal-title {
+  font-size: 13px;
+  color: #ccc;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.terminal-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.terminal-controls button {
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 14px;
+  border-radius: 3px;
+  transition: all 0.2s;
+}
+
+.terminal-controls button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.terminal-output {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.terminal-welcome {
+  color: #007acc;
+  font-style: italic;
+}
+
+.terminal-line {
+  margin-bottom: 4px;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.terminal-line.command {
+  color: #4ec9b0;
+}
+
+.terminal-line.output {
+  color: #ccc;
+}
+
+.terminal-line.error {
+  color: #f48771;
+}
+
+.terminal-timestamp {
+  color: #666;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.terminal-prompt {
+  color: #4ec9b0;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.terminal-user {
+  color: #569cd6;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.terminal-text {
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.terminal-input-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #1e1e1e;
+  border-top: 1px solid #3e3e42;
+}
+
+.terminal-input-container .terminal-prompt {
+  color: #4ec9b0;
+  font-weight: bold;
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+.terminal-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #ccc;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 13px;
+  outline: none;
+}
+
+.terminal-input::placeholder {
+  color: #666;
+}

@@ -1,0 +1,683 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
+import Editor from '@monaco-editor/react';
+import { io } from 'socket.io-client';
+import UserPanel from './UserPanel';
+import LanguageSelector from './LanguageSelector';
+import OutputPanel from './OutputPanel';
+import FileExplorer from './FileExplorer';
+import ThemeSwitcher from './ThemeSwitcher';
+import FileTabs from './FileTabs';
+import SettingsPanel from './SettingsPanel';
+import Terminal from './Terminal';
+import SearchPanel from './SearchPanel';
+import ExtensionsManager from './ExtensionsManager';
+import './CollaborativeEditor.css';
+
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
+
+function CollaborativeEditor({ roomId, userName, userId, onLeaveRoom }) {
+  const [socket, setSocket] = useState(null);
+  const [content, setContent] = useState('');
+  const [language, setLanguage] = useState('javascript');
+  const [users, setUsers] = useState(new Map());
+  const [isConnected, setIsConnected] = useState(false);
+  const [version, setVersion] = useState(0);
+  const [output, setOutput] = useState([]);
+  const [isRunning, setIsRunning] = useState(false);
+  const [currentFile, setCurrentFile] = useState(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  
+  // New feature states
+  const [theme, setTheme] = useState('vs-dark');
+  const [openTabs, setOpenTabs] = useState([]);
+  const [activeTab, setActiveTab] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [showExtensions, setShowExtensions] = useState(false);
+  const [showInfoBanner, setShowInfoBanner] = useState(true);
+  const [settings, setSettings] = useState({
+    fontSize: 14,
+    minimap: true,
+    lineNumbers: true,
+    wordWrap: true,
+    autoSave: false,
+    formatOnSave: false,
+    tabSize: 2,
+    bracketPairColorization: true,
+    folding: true,
+    renderWhitespace: false
+  });
+  const [extensions, setExtensions] = useState([
+    {
+      id: 'live-share',
+      name: 'Live Share',
+      description: 'Real-time collaborative editing',
+      icon: '🤝',
+      installed: true,
+      enabled: true
+    }
+  ]);
+  
+  const editorRef = useRef(null);
+  const monacoRef = useRef(null);
+  const isRemoteChange = useRef(false);
+  const pendingChanges = useRef([]);
+  const lastCursorPosition = useRef(null);
+
+  // Initialize Socket.IO connection
+  useEffect(() => {
+    const newSocket = io(SERVER_URL, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000
+    });
+
+    newSocket.on('connect', () => {
+      console.log('Connected to server');
+      setIsConnected(true);
+      
+      // Join room
+      newSocket.emit('join-room', {
+        roomId,
+        userName,
+        language
+      });
+    });
+
+    newSocket.on('disconnect', () => {
+      console.log('Disconnected from server');
+      setIsConnected(false);
+    });
+
+    // Room joined successfully
+    newSocket.on('room-joined', ({ content, language, users, version }) => {
+      console.log('Joined room successfully');
+      isRemoteChange.current = true;
+      setContent(content);
+      setLanguage(language);
+      setUsers(new Map(users));
+      setVersion(version);
+    });
+
+    // User joined
+    newSocket.on('user-joined', ({ userId, userName, users }) => {
+      console.log(`User ${userName} joined`);
+      setUsers(new Map(users));
+    });
+
+    // User left
+    newSocket.on('user-left', ({ userId, users }) => {
+      console.log(`User ${userId} left`);
+      setUsers(new Map(users));
+    });
+
+    // Code update from other users
+    newSocket.on('code-update', ({ change, userId: changeUserId, version: newVersion }) => {
+      if (editorRef.current && monacoRef.current) {
+        isRemoteChange.current = true;
+        
+        const model = editorRef.current.getModel();
+        const { rangeOffset, rangeLength, text } = change;
+        
+        // Convert offset to position
+        const startPos = model.getPositionAt(rangeOffset);
+        const endPos = model.getPositionAt(rangeOffset + rangeLength);
+        
+        // Apply change
+        model.applyEdits([{
+          range: new monacoRef.current.Range(
+            startPos.lineNumber,
+            startPos.column,
+            endPos.lineNumber,
+            endPos.column
+          ),
+          text
+        }]);
+        
+        setVersion(newVersion);
+      }
+    });
+
+    // Change acknowledgment
+    newSocket.on('change-ack', ({ version: newVersion }) => {
+      setVersion(newVersion);
+    });
+
+    // Language update
+    newSocket.on('language-update', ({ language }) => {
+      setLanguage(language);
+    });
+
+    // Cursor updates from other users
+    newSocket.on('cursor-update', ({ userId, position, selection }) => {
+      // Could be used to show other users' cursors
+      console.log(`User ${userId} cursor at`, position);
+    });
+
+    // Error handling
+    newSocket.on('error', ({ message }) => {
+      console.error('Socket error:', message);
+      alert(`Error: ${message}`);
+    });
+
+    // Execution result
+    newSocket.on('execution-result', (result) => {
+      console.log('Execution result received:', result);
+      setOutput(prev => [...prev, result]);
+      setIsRunning(false);
+    });
+
+    // File operations
+    newSocket.on('file-opened', ({ content, path }) => {
+      isRemoteChange.current = true;
+      setContent(content);
+      setCurrentFile(path);
+      setHasUnsavedChanges(false);
+      
+      // Detect language from file extension
+      const ext = path.split('.').pop();
+      const langMap = {
+        'js': 'javascript',
+        'jsx': 'javascript',
+        'ts': 'typescript',
+        'tsx': 'typescript',
+        'py': 'python',
+        'java': 'java',
+        'cpp': 'cpp',
+        'c': 'c',
+        'go': 'go',
+        'html': 'html',
+        'css': 'css',
+        'json': 'json',
+        'md': 'markdown'
+      };
+      if (langMap[ext]) {
+        setLanguage(langMap[ext]);
+      }
+    });
+
+    newSocket.on('file-saved', ({ timestamp }) => {
+      setHasUnsavedChanges(false);
+      console.log('File saved successfully at', new Date(timestamp).toLocaleTimeString());
+    });
+
+    newSocket.on('file-updated', ({ path, userId, timestamp }) => {
+      console.log(`File ${path} was updated by another user at`, new Date(timestamp).toLocaleTimeString());
+      // If it's the current file, optionally reload it
+      if (path === currentFile && userId !== socket?.id) {
+        // Notify user that the file was updated by someone else
+        if (confirm(`File "${path}" was updated by another user. Reload?`)) {
+          newSocket.emit('open-file', { roomId, path });
+        }
+      }
+    });
+
+    newSocket.on('file-created', ({ path, timestamp }) => {
+      console.log(`New file created: ${path} at`, new Date(timestamp).toLocaleTimeString());
+    });
+
+    newSocket.on('folder-created', ({ path, timestamp }) => {
+      console.log(`New folder created: ${path} at`, new Date(timestamp).toLocaleTimeString());
+    });
+
+    newSocket.on('file-deleted', ({ path, timestamp }) => {
+      console.log(`File deleted: ${path} at`, new Date(timestamp).toLocaleTimeString());
+      // If current file was deleted, clear editor
+      if (path === currentFile) {
+        setCurrentFile(null);
+        setContent('');
+        setHasUnsavedChanges(false);
+      }
+    });
+
+    setSocket(newSocket);
+
+    return () => {
+      newSocket.emit('leave-room', { roomId });
+      newSocket.close();
+    };
+  }, [roomId, userName, language]);
+
+  // Handle editor mount
+  const handleEditorDidMount = (editor, monaco) => {
+    editorRef.current = editor;
+    monacoRef.current = monaco;
+
+    // Listen to content changes
+    editor.onDidChangeModelContent((event) => {
+      if (isRemoteChange.current) {
+        isRemoteChange.current = false;
+        return;
+      }
+
+      // Send changes to server
+      if (socket && isConnected) {
+        event.changes.forEach((change) => {
+          const rangeOffset = editor.getModel().getOffsetAt({
+            lineNumber: change.range.startLineNumber,
+            column: change.range.startColumn
+          });
+
+          const operation = {
+            rangeOffset,
+            rangeLength: change.rangeLength,
+            text: change.text
+          };
+
+          socket.emit('code-change', {
+            roomId,
+            change: operation,
+            version
+          });
+        });
+      }
+    });
+
+    // Track cursor position
+    editor.onDidChangeCursorPosition((event) => {
+      const position = event.position;
+      if (socket && isConnected) {
+        // Throttle cursor updates
+        if (Date.now() - (lastCursorPosition.current || 0) > 100) {
+          socket.emit('cursor-position', {
+            roomId,
+            position: {
+              lineNumber: position.lineNumber,
+              column: position.column
+            },
+            selection: editor.getSelection()
+          });
+          lastCursorPosition.current = Date.now();
+        }
+      }
+    });
+
+    // Set editor options
+    editor.updateOptions({
+      fontSize: settings.fontSize,
+      minimap: { enabled: settings.minimap },
+      scrollBeyondLastLine: false,
+      automaticLayout: true,
+      tabSize: settings.tabSize,
+      wordWrap: settings.wordWrap ? 'on' : 'off',
+      lineNumbers: settings.lineNumbers ? 'on' : 'off',
+      folding: settings.folding,
+      renderWhitespace: settings.renderWhitespace ? 'all' : 'none',
+      'bracketPairColorization.enabled': settings.bracketPairColorization
+    });
+
+    // Add keyboard shortcut for running code (Ctrl+Enter)
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+      handleRunCode();
+    });
+
+    // Add keyboard shortcut for saving (Ctrl+S)
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+      handleSaveFile();
+    });
+  };
+
+  // Handle code execution
+  const handleRunCode = () => {
+    if (!socket || !isConnected || isRunning || !editorRef.current) {
+      return;
+    }
+
+    const code = editorRef.current.getValue();
+    if (!code.trim()) {
+      alert('Please write some code first!');
+      return;
+    }
+
+    setIsRunning(true);
+    socket.emit('execute-code', {
+      roomId,
+      code,
+      language,
+      userName
+    });
+  };
+
+  // Clear output
+  const handleClearOutput = () => {
+    setOutput([]);
+  };
+
+  // Save file
+  const handleSaveFile = () => {
+    if (!socket || !currentFile || !editorRef.current) return;
+
+    const content = editorRef.current.getValue();
+    socket.emit('save-file', {
+      roomId,
+      path: currentFile,
+      content
+    });
+  };
+
+  // Handle file select from explorer
+  const handleFileSelect = (file) => {
+    if (hasUnsavedChanges && currentFile) {
+      if (!confirm('You have unsaved changes. Open new file anyway?')) {
+        return;
+      }
+    }
+    
+    // Add to tabs if not already open
+    const existingTab = openTabs.find(tab => tab.path === file.path);
+    if (existingTab) {
+      setActiveTab(existingTab.id);
+    } else {
+      const newTab = {
+        id: Date.now(),
+        filename: file.name,
+        path: file.path,
+        unsaved: false
+      };
+      setOpenTabs(prev => [...prev, newTab]);
+      setActiveTab(newTab.id);
+    }
+    // File will be opened via socket event
+  };
+
+  // Handle tab change
+  const handleTabChange = (tabId) => {
+    const tab = openTabs.find(t => t.id === tabId);
+    if (tab && socket) {
+      socket.emit('open-file', { roomId, path: tab.path });
+      setActiveTab(tabId);
+    }
+  };
+
+  // Handle tab close
+  const handleTabClose = (tabId) => {
+    const tab = openTabs.find(t => t.id === tabId);
+    if (tab?.unsaved) {
+      if (!confirm('File has unsaved changes. Close anyway?')) {
+        return;
+      }
+    }
+    
+    const newTabs = openTabs.filter(t => t.id !== tabId);
+    setOpenTabs(newTabs);
+    
+    if (activeTab === tabId && newTabs.length > 0) {
+      setActiveTab(newTabs[newTabs.length - 1].id);
+    } else if (newTabs.length === 0) {
+      setActiveTab(null);
+      setCurrentFile(null);
+      setContent('');
+    }
+  };
+
+  // Handle search
+  const handleSearch = (searchOptions) => {
+    if (!editorRef.current) return [];
+    
+    const model = editorRef.current.getModel();
+    const content = model.getValue();
+    
+    if (searchOptions.replace || searchOptions.replaceAll) {
+      // Handle replace
+      let newContent = content;
+      if (searchOptions.replaceAll) {
+        const regex = searchOptions.useRegex 
+          ? new RegExp(searchOptions.searchTerm, searchOptions.caseSensitive ? 'g' : 'gi')
+          : new RegExp(searchOptions.searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), searchOptions.caseSensitive ? 'g' : 'gi');
+        newContent = content.replace(regex, searchOptions.replaceTerm);
+      } else {
+        const regex = searchOptions.useRegex 
+          ? new RegExp(searchOptions.searchTerm, searchOptions.caseSensitive ? '' : 'i')
+          : new RegExp(searchOptions.searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), searchOptions.caseSensitive ? '' : 'i');
+        newContent = content.replace(regex, searchOptions.replaceTerm);
+      }
+      model.setValue(newContent);
+      return [];
+    }
+    
+    // Search and return results
+    const lines = content.split('\n');
+    const results = [];
+    lines.forEach((line, index) => {
+      if (line.toLowerCase().includes(searchOptions.searchTerm.toLowerCase())) {
+        results.push({
+          file: currentFile || 'Untitled',
+          line: index + 1,
+          text: line.trim()
+        });
+      }
+    });
+    return results;
+  };
+
+  // Handle extension install
+  const handleExtensionInstall = (extension) => {
+    setExtensions(prev => [...prev, { ...extension, installed: true, enabled: true }]);
+    alert(`${extension.name} installed successfully!`);
+  };
+
+  // Handle extension uninstall
+  const handleExtensionUninstall = (extensionId) => {
+    setExtensions(prev => prev.filter(ext => ext.id !== extensionId));
+    alert('Extension uninstalled successfully!');
+  };
+
+  // Handle extension toggle
+  const handleExtensionToggle = (extensionId) => {
+    setExtensions(prev => prev.map(ext => 
+      ext.id === extensionId ? { ...ext, enabled: !ext.enabled } : ext
+    ));
+  };
+
+  // Update settings and apply to editor
+  const handleSettingsChange = (newSettings) => {
+    setSettings(newSettings);
+    if (editorRef.current) {
+      editorRef.current.updateOptions({
+        fontSize: newSettings.fontSize,
+        minimap: { enabled: newSettings.minimap },
+        tabSize: newSettings.tabSize,
+        wordWrap: newSettings.wordWrap ? 'on' : 'off',
+        lineNumbers: newSettings.lineNumbers ? 'on' : 'off',
+        folding: newSettings.folding,
+        renderWhitespace: newSettings.renderWhitespace ? 'all' : 'none',
+        'bracketPairColorization.enabled': newSettings.bracketPairColorization
+      });
+    }
+  };
+
+  // Auto-save effect
+  useEffect(() => {
+    if (settings.autoSave && hasUnsavedChanges && currentFile) {
+      const timer = setTimeout(() => {
+        handleSaveFile();
+      }, 2000); // Auto-save after 2 seconds of inactivity
+      return () => clearTimeout(timer);
+    }
+  }, [settings.autoSave, hasUnsavedChanges, content, currentFile]);
+
+  // Track unsaved changes in tabs
+  useEffect(() => {
+    if (activeTab && !isRemoteChange.current) {
+      setOpenTabs(prev => prev.map(tab => 
+        tab.id === activeTab ? { ...tab, unsaved: true } : tab
+      ));
+    }
+  }, [content, activeTab]);
+
+  // Track unsaved changes
+  useEffect(() => {
+    if (currentFile && !isRemoteChange.current) {
+      setHasUnsavedChanges(true);
+    }
+  }, [content, currentFile]);
+
+  // Handle language change
+  const handleLanguageChange = (newLanguage) => {
+    setLanguage(newLanguage);
+    if (socket && isConnected) {
+      socket.emit('language-change', {
+        roomId,
+        language: newLanguage
+      });
+    }
+  };
+
+  // Copy room link
+  const copyRoomLink = () => {
+    const link = `${window.location.origin}?room=${roomId}`;
+    navigator.clipboard.writeText(link);
+    alert('Room link copied to clipboard!');
+  };
+
+  return (
+    <div className="collaborative-editor">
+      <div className="editor-header">
+        <div className="header-left">
+          <h2>Collaborative Code Editor</h2>
+          <div className="room-info">
+            <span className="room-id">Room: {roomId}</span>
+            <button onClick={copyRoomLink} className="btn-copy">
+              📋 Copy Link
+            </button>
+            {currentFile && (
+              <>
+                <span className="current-file">📄 {currentFile}</span>
+                <button
+                  onClick={handleSaveFile}
+                  className={`btn-save ${hasUnsavedChanges ? 'unsaved' : ''}`}
+                  title="Save File (Ctrl+S)"
+                >
+                  💾 Save{hasUnsavedChanges ? '*' : ''}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+        
+        <div className="header-center">
+          <LanguageSelector
+            currentLanguage={language}
+            onLanguageChange={handleLanguageChange}
+          />
+        </div>
+
+        <div className="header-right">
+          <ThemeSwitcher
+            currentTheme={theme}
+            onThemeChange={setTheme}
+          />
+          <div className="header-divider"></div>
+          <button onClick={() => setShowSearch(!showSearch)} className="btn-icon" title="Search">
+            🔍
+          </button>
+          <button onClick={() => setShowSettings(true)} className="btn-icon" title="Settings">
+            ⚙️
+          </button>
+          <button onClick={() => setShowExtensions(true)} className="btn-icon" title="Extensions">
+            🧩
+          </button>
+          <div className="header-divider"></div>
+          <div className="connection-status">
+            <span className={`status-indicator ${isConnected ? 'connected' : 'disconnected'}`}></span>
+            {isConnected ? 'Connected' : 'Disconnected'}
+          </div>
+          <button onClick={onLeaveRoom} className="btn-leave">
+            Leave Room
+          </button>
+        </div>
+      </div>
+
+      {showInfoBanner && (
+        <div className="info-banner">
+          <div className="info-content">
+            <span className="info-icon">ℹ️</span>
+            <span className="info-text">
+              <strong>Persistent Storage:</strong> All files and folders in this room are automatically saved. 
+              Everyone in the room can access, edit, and create files. Changes are synced in real-time!
+            </span>
+          </div>
+          <button className="info-close" onClick={() => setShowInfoBanner(false)} title="Close">
+            ✖
+          </button>
+        </div>
+      )}
+
+      {openTabs.length > 0 && (
+        <FileTabs
+          tabs={openTabs}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          onTabClose={handleTabClose}
+        />
+      )}
+
+      {showSearch && (
+        <SearchPanel
+          isOpen={showSearch}
+          onClose={() => setShowSearch(false)}
+          onSearch={handleSearch}
+        />
+      )}
+
+      <div className="editor-main">
+        <FileExplorer
+          socket={socket}
+          roomId={roomId}
+          onFileSelect={handleFileSelect}
+          currentFile={currentFile}
+        />
+        
+        <div className="editor-wrapper">
+          <Editor
+            height="100%"
+            language={language}
+            value={content}
+            theme={theme}
+            onMount={handleEditorDidMount}
+            options={{
+              selectOnLineNumbers: true,
+              roundedSelection: false,
+              readOnly: false,
+              cursorStyle: 'line',
+              automaticLayout: true,
+            }}
+          />
+        </div>
+
+        <UserPanel users={users} currentUserId={userId} />
+      </div>
+
+      <Terminal socket={socket} roomId={roomId} />
+
+      <OutputPanel
+        output={output}
+        isRunning={isRunning}
+        onRun={handleRunCode}
+        onClear={handleClearOutput}
+      />
+
+      {showSettings && (
+        <SettingsPanel
+          settings={settings}
+          onSettingsChange={handleSettingsChange}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
+
+      {showExtensions && (
+        <ExtensionsManager
+          isOpen={showExtensions}
+          onClose={() => setShowExtensions(false)}
+          extensions={extensions}
+          onInstall={handleExtensionInstall}
+          onUninstall={handleExtensionUninstall}
+          onToggle={handleExtensionToggle}
+        />
+      )}
+    </div>
+  );
+}
+
+export default CollaborativeEditor;
