@@ -1,16 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Editor from '@monaco-editor/react';
 import { io } from 'socket.io-client';
 import UserPanel from './UserPanel';
 import LanguageSelector from './LanguageSelector';
 import OutputPanel from './OutputPanel';
-import FileExplorer from './FileExplorer';
 import ThemeSwitcher from './ThemeSwitcher';
-import FileTabs from './FileTabs';
-import SettingsPanel from './SettingsPanel';
-import Terminal from './Terminal';
-import SearchPanel from './SearchPanel';
-import ExtensionsManager from './ExtensionsManager';
 import './CollaborativeEditor.css';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
@@ -344,6 +338,80 @@ function CollaborativeEditor({ roomId, userName, userId, onLeaveRoom }) {
     setOutput([]);
   };
 
+  // Open file from local system
+  const handleOpenFile = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.js,.jsx,.ts,.tsx,.py,.java,.cpp,.c,.go,.html,.css,.json,.md,.txt';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const fileContent = event.target.result;
+          isRemoteChange.current = true;
+          setContent(fileContent);
+          setCurrentFile(file.name);
+          
+          // Detect language from extension
+          const ext = file.name.split('.').pop().toLowerCase();
+          const langMap = {
+            'js': 'javascript', 'jsx': 'javascript',
+            'ts': 'typescript', 'tsx': 'typescript',
+            'py': 'python', 'java': 'java',
+            'cpp': 'cpp', 'c': 'c', 'go': 'go',
+            'html': 'html', 'css': 'css',
+            'json': 'json', 'md': 'markdown'
+          };
+          if (langMap[ext]) {
+            setLanguage(langMap[ext]);
+          }
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
+  };
+
+  // Create new file
+  const handleNewFile = () => {
+    const fileName = prompt('Enter file name (e.g., mycode.js, test.java):');
+    if (fileName) {
+      setCurrentFile(fileName);
+      setContent('// Welcome to the collaborative code editor!\\n// Start coding together...\\n');
+      setHasUnsavedChanges(false);
+      
+      // Detect language from extension
+      const ext = fileName.split('.').pop().toLowerCase();
+      const langMap = {
+        'js': 'javascript', 'jsx': 'javascript',
+        'ts': 'typescript', 'tsx': 'typescript',
+        'py': 'python', 'java': 'java',
+        'cpp': 'cpp', 'c': 'c', 'go': 'go',
+        'html': 'html', 'css': 'css',
+        'json': 'json', 'md': 'markdown'
+      };
+      if (langMap[ext]) {
+        setLanguage(langMap[ext]);
+      }
+    }
+  };
+
+  // Download current file
+  const handleDownloadFile = () => {
+    if (!editorRef.current) return;
+    
+    const code = editorRef.current.getValue();
+    const fileName = currentFile || `code.${language === 'javascript' ? 'js' : language}`;
+    const blob = new Blob([code], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   // Save file
   const handleSaveFile = () => {
     if (!socket || !currentFile || !editorRef.current) return;
@@ -541,17 +609,19 @@ function CollaborativeEditor({ roomId, userName, userId, onLeaveRoom }) {
             <button onClick={copyRoomLink} className="btn-copy">
               📋 Copy Link
             </button>
+          </div>
+          <div className="file-menu">
+            <button onClick={handleNewFile} className="btn-file" title="New File">
+              📝 New
+            </button>
+            <button onClick={handleOpenFile} className="btn-file" title="Open File from Computer">
+              📂 Open
+            </button>
+            <button onClick={handleDownloadFile} className="btn-file" title="Download Current File">
+              💾 Download
+            </button>
             {currentFile && (
-              <>
-                <span className="current-file">📄 {currentFile}</span>
-                <button
-                  onClick={handleSaveFile}
-                  className={`btn-save ${hasUnsavedChanges ? 'unsaved' : ''}`}
-                  title="Save File (Ctrl+S)"
-                >
-                  💾 Save{hasUnsavedChanges ? '*' : ''}
-                </button>
-              </>
+              <span className="current-file">📄 {currentFile}</span>
             )}
           </div>
         </div>
@@ -568,16 +638,6 @@ function CollaborativeEditor({ roomId, userName, userId, onLeaveRoom }) {
             currentTheme={theme}
             onThemeChange={setTheme}
           />
-          <div className="header-divider"></div>
-          <button onClick={() => setShowSearch(!showSearch)} className="btn-icon" title="Search">
-            🔍
-          </button>
-          <button onClick={() => setShowSettings(true)} className="btn-icon" title="Settings">
-            ⚙️
-          </button>
-          <button onClick={() => setShowExtensions(true)} className="btn-icon" title="Extensions">
-            🧩
-          </button>
           <div className="header-divider"></div>
           <div className="connection-status">
             <span className={`status-indicator ${isConnected ? 'connected' : 'disconnected'}`}></span>
@@ -613,23 +673,8 @@ function CollaborativeEditor({ roomId, userName, userId, onLeaveRoom }) {
         />
       )}
 
-      {showSearch && (
-        <SearchPanel
-          isOpen={showSearch}
-          onClose={() => setShowSearch(false)}
-          onSearch={handleSearch}
-        />
-      )}
-
       <div className="editor-main">
-        <FileExplorer
-          socket={socket}
-          roomId={roomId}
-          onFileSelect={handleFileSelect}
-          currentFile={currentFile}
-        />
-        
-        <div className="editor-wrapper">
+        <div className="editor-wrapper-full">
           <Editor
             height="100%"
             language={language}
@@ -649,33 +694,12 @@ function CollaborativeEditor({ roomId, userName, userId, onLeaveRoom }) {
         <UserPanel users={users} currentUserId={userId} />
       </div>
 
-      <Terminal socket={socket} roomId={roomId} />
-
       <OutputPanel
         output={output}
         isRunning={isRunning}
         onRun={handleRunCode}
         onClear={handleClearOutput}
       />
-
-      {showSettings && (
-        <SettingsPanel
-          settings={settings}
-          onSettingsChange={handleSettingsChange}
-          onClose={() => setShowSettings(false)}
-        />
-      )}
-
-      {showExtensions && (
-        <ExtensionsManager
-          isOpen={showExtensions}
-          onClose={() => setShowExtensions(false)}
-          extensions={extensions}
-          onInstall={handleExtensionInstall}
-          onUninstall={handleExtensionUninstall}
-          onToggle={handleExtensionToggle}
-        />
-      )}
     </div>
   );
 }

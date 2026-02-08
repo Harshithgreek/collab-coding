@@ -164,45 +164,114 @@ try {
    */
   async executeJava(code, input) {
     try {
+      // Check if javac is available
+      try {
+        await execAsync('javac -version', { timeout: 5000 });
+      } catch (checkError) {
+        return {
+          success: false,
+          output: '',
+          error: 'Java compiler (javac) is not installed or not in PATH. Please install JDK (Java Development Kit).\n\nDownload JDK from: https://www.oracle.com/java/technologies/downloads/\nOr install OpenJDK: https://adoptium.net/'
+        };
+      }
+
       // Extract class name from code
       const classNameMatch = code.match(/public\s+class\s+(\w+)/);
-      const className = classNameMatch ? classNameMatch[1] : 'Main';
+      if (!classNameMatch) {
+        return {
+          success: false,
+          output: '',
+          error: 'No public class found. Java code must contain: public class ClassName { ... }'
+        };
+      }
+      const className = classNameMatch[1];
       
       const fileName = `${className}.java`;
       const filePath = path.join(this.tempDir, fileName);
+      const classFilePath = path.join(this.tempDir, `${className}.class`);
 
       await fs.writeFile(filePath, code);
 
-      // Compile
-      const compileResult = await execAsync(`javac "${filePath}"`, {
-        timeout: this.timeout,
-        maxBuffer: this.maxOutputLength,
-        cwd: this.tempDir
-      });
+      // Compile with better error handling
+      let compileResult;
+      try {
+        compileResult = await execAsync(`javac "${filePath}"`, {
+          timeout: this.timeout,
+          maxBuffer: this.maxOutputLength,
+          cwd: this.tempDir
+        });
+      } catch (compileError) {
+        await this.cleanup(filePath);
+        return {
+          success: false,
+          output: '',
+          error: `Compilation Error:\n${compileError.stderr || compileError.message}`
+        };
+      }
 
       if (compileResult.stderr) {
         await this.cleanup(filePath);
         return {
           success: false,
           output: '',
-          error: compileResult.stderr
+          error: `Compilation Error:\n${compileResult.stderr}`
         };
       }
 
-      // Run
-      const { stdout, stderr } = await execAsync(`java -cp "${this.tempDir}" ${className}`, {
-        timeout: this.timeout,
-        maxBuffer: this.maxOutputLength
-      });
+      // Run with proper classpath and handle Scanner/input gracefully
+      let runResult;
+      try {
+        // Provide empty stdin to handle Scanner gracefully
+        runResult = await execAsync(`echo. | java -cp "${this.tempDir}" ${className}`, {
+          timeout: 5000, // Shorter timeout for Scanner cases
+          maxBuffer: this.maxOutputLength,
+          shell: true
+        });
+      } catch (runError) {
+        await this.cleanup(filePath);
+        await this.cleanup(classFilePath);
+        
+        // Provide detailed error information
+        let errorMessage = 'Runtime Error:\n';
+        if (runError.stderr) {
+          errorMessage += runError.stderr;
+        } else if (runError.message) {
+          errorMessage += runError.message;
+        }
+        
+        // Add helpful hints
+        if (runError.killed || runError.signal === 'SIGTERM') {
+          errorMessage += '\n\n⚠️ Execution timeout (5 seconds)';
+          if (code.includes('Scanner') || code.includes('System.in')) {
+            errorMessage += '\n\nNote: Scanner input detected. The program received empty input.';
+            errorMessage += '\nFor testing, replace Scanner with hardcoded test values:';
+            errorMessage += '\n  String s = "test input";  // Instead of sc.nextLine()';
+          }
+        } else if (runError.stderr && runError.stderr.includes('NoClassDefFoundError')) {
+          errorMessage += '\n\nHint: Class file was not found. Make sure your class name matches the public class in your code.';
+        } else if (runError.stderr && runError.stderr.includes('NoSuchMethodError: main')) {
+          errorMessage += '\n\nHint: Missing or incorrect main method. Required:\npublic static void main(String[] args) { ... }';
+        } else if (runError.stderr && runError.stderr.includes('NoSuchElementException')) {
+          errorMessage += '\n\n⚠️ Scanner tried to read input but none was available.';
+          errorMessage += '\nFor online execution, use hardcoded test data instead:';
+          errorMessage += '\n  String s = "hello";  // Instead of sc.nextLine()';
+        }
+        
+        return {
+          success: false,
+          output: runError.stdout || '',
+          error: errorMessage
+        };
+      }
 
       // Cleanup
       await this.cleanup(filePath);
-      await this.cleanup(path.join(this.tempDir, `${className}.class`));
+      await this.cleanup(classFilePath);
 
       return {
-        success: !stderr,
-        output: stdout || stderr,
-        error: stderr || null
+        success: true,
+        output: runResult.stdout || 'Program executed successfully (no output)',
+        error: runResult.stderr || null
       };
     } catch (error) {
       return this.handleError(error);

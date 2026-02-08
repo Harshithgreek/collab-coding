@@ -1,0 +1,109 @@
+.status-bar {
+    height: 22px;
+    background: #007acc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 12px;
+    font-size: 12px;
+    color: #ffffff;
+    border-top: 1px solid #005a9e;
+    flex-shrink: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    z-index: 50;
+}
+
+.status-bar-left,
+.status-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 8px;
+    height: 22px;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+    white-space: nowrap;
+}
+
+.status-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.status-connection {
+    padding-left: 0;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    animation: pulse-status 2s infinite;
+}
+
+.status-dot.connected {
+    background: #4ec9b0;
+}
+
+.status-dot.disconnected {
+    background: #f48771;
+    animation: none;
+}
+
+@keyframes pulse-status {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}
+
+.status-file {
+    font-weight: 500;
+}
+
+.status-cursor {
+    font-family: 'Consolas', 'Courier New', monospace;
+    min-width: 120px;
+}
+
+.status-language {
+    font-weight: 500;
+}
+
+.status-encoding,
+.status-eol {
+    opacity: 0.9;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .status-bar {
+        font-size: 11px;
+        gap: 8px;
+    }
+
+    .status-bar-left,
+    .status-bar-right {
+        gap: 8px;
+    }
+
+    .status-item {
+        padding: 0 4px;
+    }
+
+    .status-encoding,
+    .status-eol {
+        display: none;
+    }
+}

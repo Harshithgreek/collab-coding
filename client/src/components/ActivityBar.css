@@ -1,0 +1,124 @@
+.activity-bar {
+    width: 48px;
+    background: #333333;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border-right: 1px solid #2b2b2b;
+    flex-shrink: 0;
+    z-index: 100;
+}
+
+.activity-bar-items {
+    display: flex;
+    flex-direction: column;
+}
+
+.activity-bar-bottom {
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 4px;
+}
+
+.activity-bar-item {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    transition: background-color 0.1s ease;
+    border-left: 2px solid transparent;
+}
+
+.activity-bar-item:hover {
+    background: #2a2a2a;
+}
+
+.activity-bar-item.active {
+    border-left-color: #007acc;
+    background: #2a2a2a;
+}
+
+.activity-bar-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #007acc;
+}
+
+.activity-icon {
+    font-size: 24px;
+    user-select: none;
+    filter: grayscale(0.3);
+    transition: filter 0.1s ease;
+}
+
+.activity-bar-item:hover .activity-icon,
+.activity-bar-item.active .activity-icon {
+    filter: grayscale(0);
+}
+
+.activity-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #007acc;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 600;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+.activity-tooltip {
+    position: absolute;
+    left: 52px;
+    background: #252526;
+    color: #cccccc;
+    padding: 6px 10px;
+    border-radius: 3px;
+    font-size: 12px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    border: 1px solid #454545;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+.activity-tooltip::before {
+    content: '';
+    position: absolute;
+    left: -4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-right: 4px solid #454545;
+}
+
+.activity-tooltip::after {
+    content: '';
+    position: absolute;
+    left: -3px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-right: 4px solid #252526;
+}

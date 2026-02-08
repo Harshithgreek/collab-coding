@@ -1,7 +1,7 @@
 .file-explorer {
   width: 250px;
-  background: #252526;
-  border-right: 1px solid #3e3e42;
+  background: #f8f9fa;
+  border-right: 1px solid #d1d5db;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -12,14 +12,14 @@
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #3e3e42;
-  background: #2d2d30;
+  border-bottom: 1px solid #d1d5db;
+  background: #e8f5e9;
 }
 
 .explorer-header h3 {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #cccccc;
+  color: #1a4d2e;
   margin: 0;
 }
 
@@ -30,7 +30,7 @@
 
 .btn-icon {
   background: transparent;
-  color: #cccccc;
+  color: #1a4d2e;
   border: none;
   padding: 0.25rem 0.4rem;
   border-radius: 4px;
@@ -40,7 +40,7 @@
 }
 
 .btn-icon:hover {
-  background: #3e3e42;
+  background: #d4edda;
 }
 
 .explorer-content {
@@ -56,7 +56,7 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #666;
+  color: #6c757d;
   padding: 1rem;
   text-align: center;
 }
@@ -64,7 +64,7 @@
 .explorer-empty button {
   margin-top: 1rem;
   padding: 0.5rem 1rem;
-  background: #0e639c;
+  background: #27ae60;
   color: #fff;
   border: none;
   border-radius: 4px;
@@ -73,7 +73,7 @@
 }
 
 .explorer-empty button:hover {
-  background: #1177bb;
+  background: #2ecc71;
 }
 
 .explorer-hint {
@@ -96,18 +96,18 @@
   gap: 0.5rem;
   padding: 0.4rem 1rem;
   cursor: pointer;
-  color: #cccccc;
+  color: #2c3e50;
   font-size: 0.85rem;
   user-select: none;
   transition: background 0.15s;
 }
 
 .explorer-item:hover {
-  background: #2a2d2e;
+  background: #e8f5e9;
 }
 
 .explorer-item.active {
-  background: #37373d;
+  background: #c8e6c9;
 }
 
 .explorer-item .icon {
@@ -142,10 +142,10 @@
 
 .context-menu {
   position: fixed;
-  background: #2d2d30;
-  border: 1px solid #3e3e42;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
   border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   min-width: 150px;
   overflow: hidden;
@@ -154,12 +154,12 @@
 .context-menu div {
   padding: 0.5rem 1rem;
   cursor: pointer;
-  color: #cccccc;
+  color: #2c3e50;
   font-size: 0.85rem;
 }
 
 .context-menu div:hover {
-  background: #37373d;
+  background: #e8f5e9;
 }
 
 .context-menu div.danger {
@@ -197,34 +197,34 @@
 }
 
 .dialog {
-  background: #2d2d30;
-  border: 1px solid #3e3e42;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
   border-radius: 8px;
   padding: 1.5rem;
   min-width: 300px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 .dialog h4 {
   margin: 0 0 1rem 0;
-  color: #cccccc;
+  color: #1a4d2e;
   font-size: 1rem;
 }
 
 .dialog input {
   width: 100%;
   padding: 0.5rem;
-  background: #1e1e1e;
-  border: 1px solid #3e3e42;
+  background: #f8f9fa;
+  border: 1px solid #d1d5db;
   border-radius: 4px;
-  color: #cccccc;
+  color: #2c3e50;
   font-size: 0.9rem;
   margin-bottom: 1rem;
 }
 
 .dialog input:focus {
   outline: none;
-  border-color: #0e639c;
+  border-color: #27ae60;
 }
 
 .dialog-actions {
@@ -243,21 +243,21 @@
 }
 
 .dialog-actions button {
-  background: #3e3e42;
-  color: #cccccc;
+  background: #e8f5e9;
+  color: #1a4d2e;
 }
 
 .dialog-actions button:hover {
-  background: #4e4e52;
+  background: #c8e6c9;
 }
 
 .dialog-actions button.primary {
-  background: #0e639c;
+  background: #27ae60;
   color: #fff;
 }
 
 .dialog-actions button.primary:hover {
-  background: #1177bb;
+  background: #2ecc71;
 }
 
 /* Scrollbar */
@@ -266,16 +266,16 @@
 }
 
 .explorer-content::-webkit-scrollbar-track {
-  background: #252526;
+  background: #f8f9fa;
 }
 
 .explorer-content::-webkit-scrollbar-thumb {
-  background: #3e3e42;
+  background: #d1d5db;
   border-radius: 4px;
 }
 
 .explorer-content::-webkit-scrollbar-thumb:hover {
-  background: #4e4e52;
+  background: #9ca3af;
 }
 
 /* Responsive */
@@ -284,6 +284,6 @@
     width: 100%;
     max-height: 200px;
     border-right: none;
-    border-bottom: 1px solid #3e3e42;
+    border-bottom: 1px solid #d1d5db;
   }
 }

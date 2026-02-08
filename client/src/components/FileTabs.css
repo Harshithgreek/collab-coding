@@ -1,88 +1,97 @@
+/* VS Code Style File Tabs */
+
 .file-tabs {
+  display: flex;
   background: #252526;
-  border-bottom: 1px solid #3e3e42;
+  border-bottom: 1px solid #2b2b2b;
   overflow-x: auto;
   overflow-y: hidden;
+  height: 35px;
+  flex-shrink: 0;
 }
 
-.tabs-container {
-  display: flex;
-  align-items: center;
-  min-height: 35px;
+.file-tabs::-webkit-scrollbar {
+  height: 0px;
 }
 
 .file-tab {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  background: #2d2d30;
-  border-right: 1px solid #3e3e42;
-  cursor: pointer;
-  user-select: none;
-  white-space: nowrap;
+  gap: 8px;
+  padding: 0 12px;
   min-width: 120px;
   max-width: 200px;
+  height: 35px;
+  background: #2d2d2d;
+  border-right: 1px solid #252526;
+  cursor: pointer;
+  transition: background 0.1s;
   position: relative;
-  transition: background 0.2s;
+  flex-shrink: 0;
 }
 
 .file-tab:hover {
-  background: #3e3e42;
+  background: #2a2a2a;
 }
 
 .file-tab.active {
   background: #1e1e1e;
-  border-bottom: 2px solid #007acc;
+  border-top: 1px solid #007acc;
 }
 
-.file-tab.unsaved .tab-name {
-  font-style: italic;
+.file-tab.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #007acc;
 }
 
-.tab-icon {
-  font-size: 14px;
-  flex-shrink: 0;
-}
-
-.tab-name {
-  flex: 1;
+.tab-filename {
+  font-size: 13px;
+  color: #cccccc;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 13px;
-  color: #ccc;
+  flex: 1;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
-.file-tab.active .tab-name {
-  color: white;
+.file-tab.active .tab-filename {
+  color: #ffffff;
 }
 
-.unsaved-indicator {
-  color: #ff6b6b;
-  font-size: 18px;
-  line-height: 1;
-  margin-left: -2px;
+.tab-filename.unsaved::after {
+  content: '●';
+  margin-left: 4px;
+  color: #4ec9b0;
+  font-size: 10px;
 }
 
 .tab-close {
-  background: none;
+  background: transparent;
   border: none;
-  color: #888;
-  font-size: 20px;
+  color: #858585;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 16px;
   cursor: pointer;
-  padding: 0;
-  width: 18px;
-  height: 18px;
+  transition: all 0.1s;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 3px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
-  line-height: 1;
-  transition: all 0.2s;
 }
 
 .tab-close:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: #3e3e3e;
+  color: #cccccc;
+}
+
+.file-tab.active .tab-close:hover {
+  background: #2d2d2d;
 }
