@@ -48,8 +48,14 @@ io.on('connection', (socket) => {
   console.log(`User connected: ${socket.id}`);
   
   // Join room
-  socket.on('join-room', ({ roomId, userName, language }) => {
+  socket.on('join-room', ({ roomId, userName, language, isCreating }) => {
     try {
+      // If user is joining (not creating), verify the room exists
+      if (!isCreating && !roomManager.roomExists(roomId)) {
+        socket.emit('room-not-found', { roomId });
+        return;
+      }
+
       const room = roomManager.joinRoom(roomId, socket.id, userName);
       socket.join(roomId);
       

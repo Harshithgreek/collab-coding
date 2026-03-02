@@ -8,6 +8,13 @@ class RoomManager {
   }
 
   /**
+   * Check if a room exists
+   */
+  roomExists(roomId) {
+    return this.rooms.has(roomId);
+  }
+
+  /**
    * Join or create a room
    */
   joinRoom(roomId, userId, userName) {
@@ -16,7 +23,7 @@ class RoomManager {
       this.rooms.set(roomId, {
         id: roomId,
         content: '// Welcome to the collaborative code editor!\n// Start coding together...\n',
-        language: 'javascript',
+        language: 'java',
         users: new Map(),
         version: 0,
         operations: [], // Store operations for conflict resolution

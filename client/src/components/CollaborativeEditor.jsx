@@ -9,7 +9,7 @@ import './CollaborativeEditor.css';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
-function CollaborativeEditor({ roomId, userName, userId, onLeaveRoom }) {
+function CollaborativeEditor({ roomId, userName, userId, isCreating, onLeaveRoom }) {
   const [socket, setSocket] = useState(null);
   const [content, setContent] = useState('');
   const [language, setLanguage] = useState('javascript');
@@ -58,6 +58,14 @@ function CollaborativeEditor({ roomId, userName, userId, onLeaveRoom }) {
   const pendingChanges = useRef([]);
   const lastCursorPosition = useRef(null);
 
+  // Apply theme to Monaco editor when theme state changes
+  useEffect(() => {
+    if (monacoRef.current) {
+      const themeMap = { 'vs-dark': 'custom-dark-green', 'vs': 'custom-light', 'hc-black': 'custom-hc-black' };
+      monacoRef.current.editor.setTheme(themeMap[theme] || 'custom-dark-green');
+    }
+  }, [theme]);
+
   // Initialize Socket.IO connection
   useEffect(() => {
     const newSocket = io(SERVER_URL, {
@@ -75,13 +83,21 @@ function CollaborativeEditor({ roomId, userName, userId, onLeaveRoom }) {
       newSocket.emit('join-room', {
         roomId,
         userName,
-        language
+        language,
+        isCreating
       });
     });
 
     newSocket.on('disconnect', () => {
       console.log('Disconnected from server');
       setIsConnected(false);
+    });
+
+    // Room not found
+    newSocket.on('room-not-found', ({ roomId }) => {
+      alert(`Room "${roomId}" does not exist. Please check the Room ID or create a new room.`);
+      newSocket.disconnect();
+      onLeaveRoom();
     });
 
     // Room joined successfully
@@ -237,6 +253,52 @@ function CollaborativeEditor({ roomId, userName, userId, onLeaveRoom }) {
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
+
+    // Define custom dark theme
+    monaco.editor.defineTheme('custom-dark-green', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [],
+      colors: {
+        'editor.background': '#1e1e1e',
+        'editorCursor.foreground': '#10b981',
+        'editor.lineHighlightBackground': '#2a2d2e',
+        'editor.selectionBackground': '#10b98155',
+        'editor.inactiveSelectionBackground': '#10b98133'
+      }
+    });
+
+    // Define custom light theme
+    monaco.editor.defineTheme('custom-light', {
+      base: 'vs',
+      inherit: true,
+      rules: [],
+      colors: {
+        'editor.background': '#ffffff',
+        'editorCursor.foreground': '#000000',
+        'editor.lineHighlightBackground': '#f0f0f0',
+        'editor.selectionBackground': '#add6ff',
+        'editor.inactiveSelectionBackground': '#e5ebf1'
+      }
+    });
+
+    // Define custom high contrast theme
+    monaco.editor.defineTheme('custom-hc-black', {
+      base: 'hc-black',
+      inherit: true,
+      rules: [],
+      colors: {
+        'editor.background': '#000000',
+        'editorCursor.foreground': '#ffffff',
+        'editor.lineHighlightBackground': '#1a1a1a',
+        'editor.selectionBackground': '#264f78',
+        'editor.inactiveSelectionBackground': '#3a3d41'
+      }
+    });
+
+    // Apply current theme
+    const themeMap = { 'vs-dark': 'custom-dark-green', 'vs': 'custom-light', 'hc-black': 'custom-hc-black' };
+    monaco.editor.setTheme(themeMap[theme] || 'custom-dark-green');
 
     // Listen to content changes
     editor.onDidChangeModelContent((event) => {
@@ -600,7 +662,7 @@ function CollaborativeEditor({ roomId, userName, userId, onLeaveRoom }) {
   };
 
   return (
-    <div className="collaborative-editor">
+    <div className={`collaborative-editor theme-${theme}`}>
       <div className="editor-header">
         <div className="header-left">
           <h2>Collaborative Code Editor</h2>
@@ -679,7 +741,7 @@ function CollaborativeEditor({ roomId, userName, userId, onLeaveRoom }) {
             height="100%"
             language={language}
             value={content}
-            theme={theme}
+            theme={theme === 'vs' ? 'custom-light' : theme === 'hc-black' ? 'custom-hc-black' : 'custom-dark-green'}
             onMount={handleEditorDidMount}
             options={{
               selectOnLineNumbers: true,

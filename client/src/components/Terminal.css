@@ -1,5 +1,5 @@
 .terminal-container {
-  background: #1e1e1e;
+  background: #101e33;
   border-top: 1px solid #3e3e42;
   display: flex;
   flex-direction: column;
@@ -64,7 +64,7 @@
 }
 
 .terminal-welcome {
-  color: #007acc;
+  color: #10b981;
   font-style: italic;
 }
 
@@ -76,7 +76,7 @@
 }
 
 .terminal-line.command {
-  color: #4ec9b0;
+  color: #10b981;
 }
 
 .terminal-line.output {
@@ -94,13 +94,13 @@
 }
 
 .terminal-prompt {
-  color: #4ec9b0;
+  color: #10b981;
   font-weight: bold;
   flex-shrink: 0;
 }
 
 .terminal-user {
-  color: #569cd6;
+  color: #10b981;
   font-weight: 500;
   flex-shrink: 0;
 }
@@ -115,12 +115,12 @@
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: #1e1e1e;
+  background: #101e33;
   border-top: 1px solid #3e3e42;
 }
 
 .terminal-input-container .terminal-prompt {
-  color: #4ec9b0;
+  color: #10b981;
   font-weight: bold;
   font-family: 'Consolas', 'Monaco', monospace;
 }

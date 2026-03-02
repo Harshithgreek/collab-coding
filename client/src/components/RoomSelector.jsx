@@ -22,7 +22,7 @@ function RoomSelector({ onJoinRoom, initialUserName }) {
       return;
     }
 
-    onJoinRoom(finalRoomId, userName.trim());
+    onJoinRoom(finalRoomId, userName.trim(), isCreating);
   };
 
   const handleCreateRoom = () => {

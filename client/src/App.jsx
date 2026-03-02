@@ -18,9 +18,12 @@ function App() {
     }
   }, []);
 
-  const handleJoinRoom = (room, name) => {
+  const [isCreating, setIsCreating] = useState(false);
+
+  const handleJoinRoom = (room, name, creating) => {
     setRoomId(room);
     setUserName(name);
+    setIsCreating(!!creating);
     localStorage.setItem('userName', name);
   };
 
@@ -38,6 +41,7 @@ function App() {
             roomId={roomId}
             userName={userName}
             userId={userId}
+            isCreating={isCreating}
             onLeaveRoom={handleLeaveRoom}
           />
         </div>

@@ -16,8 +16,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 0 12px;
-  background: #323233;
-  border-bottom: 1px solid #2b2b2b;
+  background: black;
+  border-bottom: 1px solid black;
   height: 35px;
   flex-shrink: 0;
   z-index: 100;
@@ -39,7 +39,7 @@
 .room-id {
   font-size: 11px;
   color: #cccccc;
-  background: #3c3c3c;
+  background: #101e33;
   padding: 3px 8px;
   border-radius: 3px;
   font-family: 'Consolas', 'Courier New', monospace;
@@ -57,7 +57,7 @@
 }
 
 .btn-copy:hover {
-  background: #2a2d2e;
+  background: #101e33;
 }
 
 .file-menu {
@@ -79,12 +79,12 @@
 }
 
 .btn-file:hover {
-  background: #2a2d2e;
+  background: #1e1e1e;
 }
 
 .current-file {
   font-size: 11px;
-  color: #4ec9b0;
+  color: #10b981;
   margin-left: 8px;
   font-family: 'Consolas', 'Courier New', monospace;
 }
@@ -99,6 +99,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+
 }
 
 .btn-save {
@@ -113,15 +114,15 @@
 }
 
 .btn-save:hover {
-  background: #2a2d2e;
+  background: #101e33;
 }
 
 .btn-save.unsaved {
-  color: #4ec9b0;
+  color: #10b981;
 }
 
 .btn-leave {
-  background: #0e639c;
+  background: #10b981;
   color: #fff;
   padding: 4px 10px;
   border-radius: 3px;
@@ -133,7 +134,7 @@
 }
 
 .btn-leave:hover {
-  background: #1177bb;
+  background: #10b981;
 }
 
 /* Info Banner */
@@ -142,8 +143,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 8px 16px;
-  background: #007acc;
-  border-bottom: 1px solid #005a9e;
+  background: #10b981;
+  border-bottom: 1px solid #10b981  ;
   gap: 12px;
   flex-shrink: 0;
 }
@@ -171,7 +172,7 @@
 }
 
 .info-close {
-  background: rgba(255, 255, 255, 0.1);
+  background: #1e1e1e;
   border: none;
   color: #fff;
   padding: 4px 8px;
@@ -182,7 +183,7 @@
 }
 
 .info-close:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: #101e33;
 }
 
 /* Main Container with Activity Bar */
@@ -196,8 +197,8 @@
 /* Sidebar */
 .sidebar {
   width: 250px;
-  background: #252526;
-  border-right: 1px solid #2b2b2b;
+  background: #101e33;
+  border-right: 1px solid #101e33;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -206,8 +207,8 @@
 
 .sidebar-header {
   padding: 8px 16px;
-  background: #252526;
-  border-bottom: 1px solid #2b2b2b;
+  background: #101e33;
+  border-bottom: 1px solid #10b981;
   flex-shrink: 0;
 }
 
@@ -225,7 +226,7 @@
   flex-direction: column;
   overflow: hidden;
   min-width: 0;
-  background: #1e1e1e;
+  background: #101e33;
 }
 
 /* Editor Main Area */
@@ -242,7 +243,7 @@
   position: relative;
   overflow: hidden;
   min-height: 0;
-  background: #1e1e1e;
+  background: #101e33;
 }
 
 .editor-wrapper {
@@ -256,8 +257,8 @@
 .bottom-panel {
   height: 200px;
   display: flex;
-  border-top: 1px solid #2b2b2b;
-  background: #1e1e1e;
+  border-top: 1px solid #10b981;
+  background: #101e33;
   flex-shrink: 0;
   overflow: hidden;
 }
@@ -300,7 +301,7 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #1e1e1e;
+  background: #101e33;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -314,11 +315,11 @@
 
 /* Selection colors */
 ::selection {
-  background: #264f78;
+  background: #059669;
   color: #ffffff;
 }
 
 ::-moz-selection {
-  background: #264f78;
+  background: #10b981;
   color: #ffffff;
 }

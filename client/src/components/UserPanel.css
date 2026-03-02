@@ -1,6 +1,6 @@
 .user-panel {
   width: 280px;
-  background: #252526;
+  background: #1a1a1a;
   border-left: 1px solid #3e3e42;
   padding: 1.5rem;
   overflow-y: auto;
@@ -14,7 +14,7 @@
   color: #cccccc;
   margin-bottom: 1.5rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid #3e3e42;
+  border-bottom: 1px solid #101e33;
 }
 
 .user-list {
