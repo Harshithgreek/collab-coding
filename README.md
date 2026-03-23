@@ -381,25 +381,3 @@ docker run -p 3001:3001 your-app
 ### Environment Variables
 
 Set `CLIENT_URL` and `VITE_SERVER_URL` for production domains.
-
-## 📄 License
-
-MIT
-
-## 👨‍💻 Development Notes
-
-- Server uses ES modules (`type: "module"`)
-- Client uses Vite for fast HMR
-- Monaco Editor is code-split for optimal loading
-- Room cleanup runs periodically to free memory
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push and create a Pull Request
-
----
-
-Built with ❤️ using React, Socket.IO, and Monaco Editor
